@@ -11,6 +11,9 @@
 /* ************************************************************************** */
 
 #include "pipex.h"
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 static	void	ft_free_tab(char **tab)
 {
@@ -42,29 +45,6 @@ static	char	*ft_get_env(const char *name, char **env)
 	return (NULL);
 }
 
-static	char	*remove_backslash(const char *str)
-{
-	int		len;
-	int		j;
-	int		i;
-	char	*result;
-
-	len = ft_strlen(str);
-	result = (char *)malloc(len + 1);
-	if (result == NULL)
-		return (NULL);
-	j = 0;
-	i = 0;
-	while (i < len)
-	{
-		if (str[i] != '\\')
-			result[j++] = str[i];
-		i++;
-	}
-	result[j] = '\0';
-	return (result);
-}
-
 static	char	*ft_get_path(char *cmd, char **env)
 {
 	int		i;
@@ -72,7 +52,12 @@ static	char	*ft_get_path(char *cmd, char **env)
 	char	**allpath;
 	char	*path_part;
 	char	**s_cmd;
-
+	if (ft_strchr(cmd, '/') != NULL)
+	{
+		if (access(cmd, F_OK | X_OK) == 0)
+			return cmd;
+		return NULL;
+	}
 	i = -1;
 	allpath = ft_split(ft_get_env("PATH", env), ':');
 	s_cmd = ft_split(cmd, ' ');
@@ -82,38 +67,36 @@ static	char	*ft_get_path(char *cmd, char **env)
 		exec = ft_strjoin(path_part, s_cmd[0]);
 		free(path_part);
 		if (access(exec, F_OK | X_OK) == 0)
-		{
-			ft_free_tab(s_cmd);
-			return (exec);
-		}
+			return (ft_free_tab(s_cmd), exec);
 		free(exec);
 	}
-	ft_free_tab(allpath);
-	ft_free_tab(s_cmd);
-	return (cmd);
+	return (ft_free_tab(allpath), ft_free_tab(s_cmd), cmd);
 }
 
 void	execute_command(char *command, char **env)
 {
 	char	**argv;
 	char	*command_path;
-	char	*new;
 
-	new = remove_backslash(command);
-	argv = ft_split(new, ' ');
+	argv = ft_split(command, ' ');
 	if (!argv)
 		ft_error("ft_split");
-	command_path = ft_get_path(new, env);
-	if (!command_path)
+	command_path = ft_get_path(command, env);
+	if (command_path == NULL)
 	{
-		printf("Command not found: %s\n", new);
+		free(command_path);
 		ft_free_tab(argv);
+		ft_error("bad command");
+	}
+	if (execve(command_path, argv, env) == -1)
+	{
+		free(command_path);
+		ft_free_tab(argv);
+		perror("execve");
 		exit(1);
 	}
-	execve(command_path, argv, env);
-	perror("execve");
 	ft_free_tab(argv);
-	if (command_path != new)
+	if (command_path != command)
 		free(command_path);
 	exit(1);
 }

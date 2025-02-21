@@ -54,26 +54,14 @@ int	ft_open_output_fd(int ac, char **av)
 
 int	main(int ac, char **av, char **envp)
 {
-	int	i;
-
 	if (ac < 5)
 	{
-		printf("Usage: %s <input_file> <cmd1> <cmd2> \
-			... <output_file>\n", av[0]);
+		perror("Usage: av <input_file> <cmd1> <cmd2> \
+			... <output_file>\n");
 		exit(1);
 	}
-	i = 2;
-	while (i < ac - 1)
-	{
-		if (av[i][0] == '.' || av[i][0] == '/')
-		{
-			printf("command not found");
-			exit(1);
-		}
-		i++;
-	}
 	if (ft_open_input_fd(av))
-		ft_error("the file doesnt open");
+		perror("no such input file");
 	if (ft_open_output_fd(ac, av))
 		ft_error("the file ..");
 	handle_pip_processes(av, ac - 3, envp);

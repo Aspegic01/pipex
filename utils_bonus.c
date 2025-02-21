@@ -77,5 +77,5 @@ void	handle_pip_processes(char **av, int num_command, char **envp)
 	}
 	if (num_command > 1)
 		ft_close(prev_pipefd[0], prev_pipefd[1]);
-	wait(NULL);
+	while(wait(NULL) > 0);
 }
